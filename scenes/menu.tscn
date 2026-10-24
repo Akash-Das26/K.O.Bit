@@ -1,0 +1,42 @@
+[gd_scene format=3 uid="uid://cesgq7kknquah"]
+
+[ext_resource type="Script" uid="uid://dl6dwgsxsb0xi" path="res://scripts/menu.gd" id="1_vjb58"]
+[ext_resource type="Texture2D" uid="uid://jfthvpbdwc26" path="res://assests/Platformer - desert v1.0.0/Platformer - desert/showcase/plat_show5.png" id="2_con2f"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_b0jfs"]
+
+[node name="Menu" type="Control" unique_id=1529229884]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_vjb58")
+
+[node name="PlatShow5" type="Sprite2D" parent="." unique_id=1824450299]
+position = Vector2(160.25002, 90.5)
+scale = Vector2(0.6240235, 0.34960938)
+texture = ExtResource("2_con2f")
+
+[node name="CenterContainer" type="CenterContainer" parent="." unique_id=1059844643]
+layout_mode = 0
+offset_right = 320.0
+offset_bottom = 180.0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CenterContainer" unique_id=1989853906]
+layout_mode = 2
+size_flags_stretch_ratio = 0.0
+
+[node name="Start" type="Button" parent="CenterContainer/VBoxContainer" unique_id=713068391]
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_b0jfs")
+text = "Start"
+
+[node name="Exit" type="Button" parent="CenterContainer/VBoxContainer" unique_id=507506077]
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_b0jfs")
+text = "Exit"
+
+[connection signal="pressed" from="CenterContainer/VBoxContainer/Start" to="." method="_on_start_pressed"]
+[connection signal="pressed" from="CenterContainer/VBoxContainer/Exit" to="." method="_on_exit_pressed"]

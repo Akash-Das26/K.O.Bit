@@ -1,0 +1,50 @@
+[gd_scene format=3 uid="uid://du2ax37oogvlb"]
+
+[ext_resource type="Texture2D" uid="uid://dix6yutbiptji" path="res://assests/Streets of Fight files/Assets/Spritesheets/Brawler Girl/hurt.png" id="1_dqkch"]
+[ext_resource type="Script" uid="uid://d0u50x4potfse" path="res://scenes/player.gd" id="1_qlg0r"]
+[ext_resource type="Texture2D" uid="uid://hdyfa61yaxym" path="res://assests/Streets of Fight files/Assets/Spritesheets/Brawler Girl/idle.png" id="2_qlg0r"]
+[ext_resource type="Texture2D" uid="uid://c8qraks4toh27" path="res://assests/Streets of Fight files/Assets/Spritesheets/Brawler Girl/punch.png" id="3_tuyoq"]
+[ext_resource type="Texture2D" uid="uid://dhi7cs66x7f20" path="res://assests/Streets of Fight files/Assets/Spritesheets/Brawler Girl/walk.png" id="4_fjrip"]
+
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_htemk"]
+height = 46.0
+
+[node name="Player" type="CharacterBody2D" unique_id=331575096]
+position = Vector2(0, -2)
+script = ExtResource("1_qlg0r")
+
+[node name="IdleCol" type="CollisionShape2D" parent="." unique_id=470011789]
+position = Vector2(77, 45)
+shape = SubResource("CapsuleShape2D_htemk")
+
+[node name="HurtCol" type="CollisionShape2D" parent="." unique_id=736721461]
+position = Vector2(85, 225)
+shape = SubResource("CapsuleShape2D_htemk")
+
+[node name="PunchCol" type="CollisionShape2D" parent="." unique_id=1210614842]
+position = Vector2(82, 166)
+shape = SubResource("CapsuleShape2D_htemk")
+
+[node name="WalkCol" type="CollisionShape2D" parent="." unique_id=1677478190]
+position = Vector2(80, 104)
+shape = SubResource("CapsuleShape2D_htemk")
+
+[node name="Hurt" type="Sprite2D" parent="." unique_id=1929786450]
+position = Vector2(86, 214)
+texture = ExtResource("1_dqkch")
+hframes = 2
+
+[node name="Idle" type="Sprite2D" parent="." unique_id=108717949]
+position = Vector2(98, 36)
+texture = ExtResource("2_qlg0r")
+hframes = 3
+
+[node name="Punch" type="Sprite2D" parent="." unique_id=980220318]
+position = Vector2(81, 155)
+texture = ExtResource("3_tuyoq")
+hframes = 3
+
+[node name="Walk" type="Sprite2D" parent="." unique_id=359026491]
+position = Vector2(81, 98)
+texture = ExtResource("4_fjrip")
+hframes = 10
