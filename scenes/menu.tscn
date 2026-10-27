@@ -1,42 +1,187 @@
-[gd_scene format=3 uid="uid://cesgq7kknquah"]
+[gd_scene load_steps=5 format=3]
 
-[ext_resource type="Script" uid="uid://dl6dwgsxsb0xi" path="res://scripts/menu.gd" id="1_vjb58"]
-[ext_resource type="Texture2D" uid="uid://jfthvpbdwc26" path="res://assests/Platformer - desert v1.0.0/Platformer - desert/showcase/plat_show5.png" id="2_con2f"]
+[ext_resource type="Script" path="res://scripts/menu.gd" id="1_menu"]
+[ext_resource type="Texture2D" path="res://assets/Previews/Stage/preview_stage.png" id="2_stage"]
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_b0jfs"]
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_button"]
+bg_color = Color(0.12, 0.1, 0.16, 0.85)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.45, 0.35, 0.6, 1)
 
-[node name="Menu" type="Control" unique_id=1529229884]
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_focus"]
+bg_color = Color(0.28, 0.22, 0.38, 0.95)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 0.85, 0.35, 1)
+
+[node name="Menu" type="Control"]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-script = ExtResource("1_vjb58")
+script = ExtResource("1_menu")
 
-[node name="PlatShow5" type="Sprite2D" parent="." unique_id=1824450299]
-position = Vector2(160.25002, 90.5)
-scale = Vector2(0.6240235, 0.34960938)
-texture = ExtResource("2_con2f")
+[node name="Background" type="Sprite2D" parent="."]
+texture_filter = 1
+texture = ExtResource("2_stage")
+centered = false
 
-[node name="CenterContainer" type="CenterContainer" parent="." unique_id=1059844643]
-layout_mode = 0
-offset_right = 320.0
-offset_bottom = 180.0
+[node name="Dim" type="ColorRect" parent="."]
+offset_right = 600.0
+offset_bottom = 240.0
+color = Color(0, 0, 0, 0.45)
 
-[node name="VBoxContainer" type="VBoxContainer" parent="CenterContainer" unique_id=1989853906]
+[node name="Title" type="Label" parent="."]
+offset_right = 600.0
+offset_bottom = 48.0
+theme_override_font_sizes/font_size = 36
+text = "K.O.BIT"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="BestLabel" type="Label" parent="."]
+offset_top = 50.0
+offset_right = 600.0
+offset_bottom = 68.0
+theme_override_font_sizes/font_size = 12
+text = ""
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="CenterContainer" type="CenterContainer" parent="."]
+offset_top = 60.0
+offset_right = 600.0
+offset_bottom = 184.0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CenterContainer"]
 layout_mode = 2
-size_flags_stretch_ratio = 0.0
+theme_override_constants/separation = 2
 
-[node name="Start" type="Button" parent="CenterContainer/VBoxContainer" unique_id=713068391]
+[node name="StageButton" type="Button" parent="CenterContainer/VBoxContainer"]
+custom_minimum_size = Vector2(160, 22)
 layout_mode = 2
-theme_override_styles/normal = SubResource("StyleBoxFlat_b0jfs")
-text = "Start"
+theme_override_styles/normal = SubResource("StyleBoxFlat_button")
+theme_override_styles/focus = SubResource("StyleBoxFlat_focus")
+text = "Stage: Street"
 
-[node name="Exit" type="Button" parent="CenterContainer/VBoxContainer" unique_id=507506077]
+[node name="Survival" type="Button" parent="CenterContainer/VBoxContainer"]
+custom_minimum_size = Vector2(160, 22)
 layout_mode = 2
-theme_override_styles/normal = SubResource("StyleBoxFlat_b0jfs")
+theme_override_styles/normal = SubResource("StyleBoxFlat_button")
+theme_override_styles/focus = SubResource("StyleBoxFlat_focus")
+text = "Survival"
+
+[node name="RoundsRow" type="HBoxContainer" parent="CenterContainer/VBoxContainer"]
+layout_mode = 2
+alignment = 1
+
+[node name="RoundsLabel" type="Label" parent="CenterContainer/VBoxContainer/RoundsRow"]
+layout_mode = 2
+text = "Rounds"
+
+[node name="Btn3" type="Button" parent="CenterContainer/VBoxContainer/RoundsRow"]
+custom_minimum_size = Vector2(40, 24)
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_button")
+theme_override_styles/focus = SubResource("StyleBoxFlat_focus")
+text = "3"
+
+[node name="Btn5" type="Button" parent="CenterContainer/VBoxContainer/RoundsRow"]
+custom_minimum_size = Vector2(40, 24)
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_button")
+theme_override_styles/focus = SubResource("StyleBoxFlat_focus")
+text = "5"
+
+[node name="Btn7" type="Button" parent="CenterContainer/VBoxContainer/RoundsRow"]
+custom_minimum_size = Vector2(40, 24)
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_button")
+theme_override_styles/focus = SubResource("StyleBoxFlat_focus")
+text = "7"
+
+[node name="Btn10" type="Button" parent="CenterContainer/VBoxContainer/RoundsRow"]
+custom_minimum_size = Vector2(40, 24)
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_button")
+theme_override_styles/focus = SubResource("StyleBoxFlat_focus")
+text = "10"
+
+[node name="Hardcore" type="Button" parent="CenterContainer/VBoxContainer"]
+custom_minimum_size = Vector2(160, 22)
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_button")
+theme_override_styles/focus = SubResource("StyleBoxFlat_focus")
+text = "Hardcore (5 rounds)"
+
+[node name="Exit" type="Button" parent="CenterContainer/VBoxContainer"]
+custom_minimum_size = Vector2(160, 22)
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_button")
+theme_override_styles/focus = SubResource("StyleBoxFlat_focus")
 text = "Exit"
+focus_neighbor_bottom = NodePath("../../../VolumeRow/VolumeSlider")
 
-[connection signal="pressed" from="CenterContainer/VBoxContainer/Start" to="." method="_on_start_pressed"]
+[node name="VolumeRow" type="HBoxContainer" parent="."]
+offset_left = 8.0
+offset_top = 187.0
+offset_right = 200.0
+offset_bottom = 205.0
+theme_override_constants/separation = 6
+
+[node name="VolumeLabel" type="Label" parent="VolumeRow"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "Volume 70%"
+vertical_alignment = 1
+
+[node name="VolumeSlider" type="HSlider" parent="VolumeRow"]
+custom_minimum_size = Vector2(110, 0)
+layout_mode = 2
+size_flags_vertical = 4
+theme_override_styles/focus = SubResource("StyleBoxFlat_focus")
+max_value = 1.0
+step = 0.05
+value = 0.7
+focus_neighbor_top = NodePath("../../CenterContainer/VBoxContainer/Exit")
+focus_neighbor_bottom = NodePath("../../MusicRow/MusicSlider")
+
+[node name="MusicRow" type="HBoxContainer" parent="."]
+offset_left = 8.0
+offset_top = 208.0
+offset_right = 200.0
+offset_bottom = 226.0
+theme_override_constants/separation = 6
+
+[node name="MusicLabel" type="Label" parent="MusicRow"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "Music 80%"
+vertical_alignment = 1
+
+[node name="MusicSlider" type="HSlider" parent="MusicRow"]
+custom_minimum_size = Vector2(110, 0)
+layout_mode = 2
+size_flags_vertical = 4
+theme_override_styles/focus = SubResource("StyleBoxFlat_focus")
+max_value = 1.0
+step = 0.05
+value = 0.8
+focus_neighbor_top = NodePath("../../VolumeRow/VolumeSlider")
+focus_neighbor_bottom = NodePath("../../CenterContainer/VBoxContainer/StageButton")
+
+[connection signal="pressed" from="CenterContainer/VBoxContainer/StageButton" to="." method="_on_stage_pressed"]
+[connection signal="pressed" from="CenterContainer/VBoxContainer/Survival" to="." method="_on_survival_pressed"]
+[connection signal="pressed" from="CenterContainer/VBoxContainer/RoundsRow/Btn3" to="." method="_on_round_pressed" binds=[3]]
+[connection signal="pressed" from="CenterContainer/VBoxContainer/RoundsRow/Btn5" to="." method="_on_round_pressed" binds=[5]]
+[connection signal="pressed" from="CenterContainer/VBoxContainer/RoundsRow/Btn7" to="." method="_on_round_pressed" binds=[7]]
+[connection signal="pressed" from="CenterContainer/VBoxContainer/RoundsRow/Btn10" to="." method="_on_round_pressed" binds=[10]]
+[connection signal="pressed" from="CenterContainer/VBoxContainer/Hardcore" to="." method="_on_hardcore_pressed"]
 [connection signal="pressed" from="CenterContainer/VBoxContainer/Exit" to="." method="_on_exit_pressed"]

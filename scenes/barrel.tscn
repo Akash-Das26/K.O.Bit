@@ -1,0 +1,34 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/barrel.gd" id="1_barrel"]
+[ext_resource type="Texture2D" path="res://assets/Stage Layers/props/barrel.png" id="2_barrel_tex"]
+[ext_resource type="Texture2D" path="res://assets/Sprites/shadow.png" id="3_shadow"]
+[ext_resource type="Script" path="res://scripts/obstacle.gd" id="4_obstacle"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_barrel"]
+size = Vector2(32, 48)
+
+[node name="Barrel" type="Area2D"]
+collision_layer = 4
+collision_mask = 0
+script = ExtResource("1_barrel")
+
+[node name="Shadow" type="Sprite2D" parent="."]
+texture_filter = 1
+position = Vector2(0, -2)
+modulate = Color(0, 0, 0, 0.35)
+texture = ExtResource("3_shadow")
+
+[node name="Sprite" type="Sprite2D" parent="."]
+texture_filter = 1
+position = Vector2(0, -24)
+texture = ExtResource("2_barrel_tex")
+hframes = 2
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(0, -24)
+shape = SubResource("RectangleShape2D_barrel")
+
+[node name="Obstacle" type="Node2D" parent="."]
+script = ExtResource("4_obstacle")
+footprint = Rect2(-10, -4, 20, 8)

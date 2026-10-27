@@ -1,0 +1,99 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/Previews/Stage/preview_stage.png" id="1_stage"]
+[ext_resource type="Script" path="res://scripts/stage_street.gd" id="2_script"]
+[ext_resource type="Script" path="res://scripts/obstacle.gd" id="3_obstacle"]
+[ext_resource type="Texture2D" path="res://assets/Stage Layers/split/lamp_post.png" id="4_lamp"]
+[ext_resource type="Texture2D" path="res://assets/Stage Layers/split/bush.png" id="5_bush"]
+[ext_resource type="Texture2D" path="res://assets/Stage Layers/split/car.png" id="6_car"]
+[ext_resource type="Texture2D" path="res://assets/Stage Layers/split/sidewalk_hydrant.png" id="7_hydrant"]
+
+[node name="Street" type="Node2D"]
+script = ExtResource("2_script")
+
+[node name="Stage" type="Sprite2D" parent="."]
+texture_filter = 1
+texture = ExtResource("1_stage")
+centered = false
+
+[node name="Lamp1" type="Node2D" parent="."]
+position = Vector2(165, 240)
+script = ExtResource("3_obstacle")
+footprint = Rect2(-6, -3, 12, 6)
+solid = false
+
+[node name="Sprite" type="Sprite2D" parent="Lamp1"]
+texture_filter = 1
+position = Vector2(-21, -139)
+centered = false
+texture = ExtResource("4_lamp")
+
+[node name="Lamp2" type="Node2D" parent="."]
+position = Vector2(549, 240)
+script = ExtResource("3_obstacle")
+footprint = Rect2(-6, -3, 12, 6)
+solid = false
+
+[node name="Sprite" type="Sprite2D" parent="Lamp2"]
+texture_filter = 1
+position = Vector2(-21, -139)
+centered = false
+texture = ExtResource("4_lamp")
+
+[node name="Lamp3" type="Node2D" parent="."]
+position = Vector2(901, 240)
+script = ExtResource("3_obstacle")
+footprint = Rect2(-6, -3, 12, 6)
+solid = false
+
+[node name="Sprite" type="Sprite2D" parent="Lamp3"]
+texture_filter = 1
+position = Vector2(-21, -139)
+centered = false
+texture = ExtResource("4_lamp")
+
+[node name="Bush1" type="Node2D" parent="."]
+position = Vector2(348, 240)
+script = ExtResource("3_obstacle")
+footprint = Rect2(-14, -3, 28, 6)
+solid = false
+
+[node name="Sprite" type="Sprite2D" parent="Bush1"]
+texture_filter = 1
+position = Vector2(-30, -68)
+centered = false
+texture = ExtResource("5_bush")
+
+[node name="Bush2" type="Node2D" parent="."]
+position = Vector2(1164, 240)
+script = ExtResource("3_obstacle")
+footprint = Rect2(-14, -3, 28, 6)
+solid = false
+
+[node name="Sprite" type="Sprite2D" parent="Bush2"]
+texture_filter = 1
+position = Vector2(-30, -68)
+centered = false
+texture = ExtResource("5_bush")
+
+[node name="Car" type="Node2D" parent="."]
+position = Vector2(469, 228)
+script = ExtResource("3_obstacle")
+footprint = Rect2(-66, -12, 132, 12)
+
+[node name="Sprite" type="Sprite2D" parent="Car"]
+texture_filter = 1
+position = Vector2(-72, -36)
+centered = false
+texture = ExtResource("6_car")
+
+[node name="Hydrant" type="Node2D" parent="."]
+position = Vector2(330.5, 146)
+script = ExtResource("3_obstacle")
+footprint = Rect2(-5, -2, 10, 5)
+
+[node name="Sprite" type="Sprite2D" parent="Hydrant"]
+texture_filter = 1
+position = Vector2(-9.5, -36)
+centered = false
+texture = ExtResource("7_hydrant")
