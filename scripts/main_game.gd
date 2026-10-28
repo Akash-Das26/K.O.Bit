@@ -68,6 +68,9 @@ const FOOD_FOOTPRINT := Rect2(-7, -3, 14, 6)
 
 var kills := 0
 var elapsed := 0.0
+## Run-wide stats handed to the results screen (paused time never counts).
+var run_seconds := 0.0
+var max_combo := 0
 var round_over := false
 var end_done := false
 var current_round := 1
@@ -105,6 +108,10 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	if not end_done:
+		run_seconds += delta
+		if is_instance_valid(player):
+			max_combo = maxi(max_combo, player.combo_count)
 	if GameState.mode == GameState.Mode.SURVIVAL and not round_over:
 		elapsed += delta
 	_update_camera()
@@ -534,7 +541,7 @@ func _win() -> void:
 	await get_tree().create_timer(WIN_HOLD, false).timeout
 	if not is_inside_tree():
 		return
-	GameState.goto_scene(GameState.MENU_SCENE)
+	_finish_run("win")
 
 
 func _on_player_died() -> void:
@@ -550,18 +557,43 @@ func _on_player_died() -> void:
 	if not is_inside_tree():
 		return
 	if GameState.mode == GameState.Mode.SURVIVAL:
-		var best := GameState.save_survival(kills, elapsed)
-		var text := "GAME OVER  Kills %d  Time %s" % [kills, _format_time(elapsed)]
-		if best:
-			text += "\nNEW BEST!"
-		hud.show_result(text)
+		hud.show_result("GAME OVER")
 		await get_tree().create_timer(GAME_OVER_HOLD, false).timeout
 	else:
 		hud.show_result("YOU LOSE")
 		await get_tree().create_timer(LOSE_HOLD, false).timeout
 	if not is_inside_tree():
 		return
-	GameState.goto_scene(GameState.MENU_SCENE)
+	_finish_run("lose")
+
+
+## Collects the run's stats, stores the score and opens the results screen.
+func _build_result(outcome: String) -> Dictionary:
+	var cleared := 0
+	if GameState.mode != GameState.Mode.SURVIVAL:
+		if outcome == "win":
+			cleared = int(GameState.total_rounds)
+		else:
+			cleared = maxi(current_round - 1, 0)
+	return {
+		"mode": int(GameState.mode),
+		"stage": int(GameState.stage),
+		"total_rounds": int(GameState.total_rounds),
+		"outcome": outcome,
+		"kills": kills,
+		"seconds": run_seconds,
+		"max_combo": max_combo,
+		"rounds_cleared": cleared,
+		"round_reached": maxi(current_round, 1),
+		"player_health_left": maxi(player.health, 0),
+	}
+
+
+func _finish_run(outcome: String) -> void:
+	if not is_inside_tree():
+		return
+	GameState.submit_result(_build_result(outcome))
+	GameState.goto_scene(GameState.RESULTS_SCENE)
 
 
 func _format_time(seconds: float) -> String:

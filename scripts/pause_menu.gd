@@ -5,20 +5,16 @@ extends CanvasLayer
 ## tree is paused, and refuses to open while a round-end/game-over banner
 ## shows. B (ui_cancel) resumes, like the Escape key.
 
-## Set by main_game while the end sequence is running.
+const SETTINGS_SCENE := preload("res://scenes/settings_screen.tscn")
+
+## Set by main_game while the end sequence is running, and while the settings
+## overlay is open.
 var blocked := false
 
+@onready var layout_root: Control = $LayoutRoot
 @onready var resume_button: Button = $LayoutRoot/CenterContainer/VBoxContainer/Resume
-@onready var volume_slider: HSlider = $LayoutRoot/CenterContainer/VBoxContainer/VolumeRow/VolumeSlider
-@onready var volume_label: Label = $LayoutRoot/CenterContainer/VBoxContainer/VolumeRow/VolumeLabel
-@onready var music_slider: HSlider = $LayoutRoot/CenterContainer/VBoxContainer/MusicRow/MusicSlider
-@onready var music_label: Label = $LayoutRoot/CenterContainer/VBoxContainer/MusicRow/MusicLabel
 
-
-func _ready() -> void:
-	volume_slider.value_changed.connect(_on_volume_changed)
-	music_slider.value_changed.connect(_on_music_changed)
-	_sync_audio()
+var _settings_screen: CanvasLayer = null
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -41,7 +37,6 @@ func _toggle() -> void:
 	tree.paused = pause_now
 	visible = pause_now
 	if pause_now:
-		_sync_audio()
 		resume_button.grab_focus()
 	else:
 		resume_button.release_focus()
@@ -54,25 +49,24 @@ func _on_resume_pressed() -> void:
 	resume_button.release_focus()
 
 
-func _sync_audio() -> void:
-	volume_slider.value = Settings.master_volume
-	music_slider.value = Settings.music_volume
-	_update_audio_labels()
+func _on_settings_pressed() -> void:
+	if _settings_screen != null:
+		return
+	var screen = SETTINGS_SCENE.instantiate()
+	screen.overlay = true
+	# The screen handles its own input; keep the pause menu from reacting.
+	blocked = true
+	layout_root.visible = false
+	_settings_screen = screen
+	add_child(screen)
+	screen.closed.connect(_on_settings_closed)
 
 
-func _update_audio_labels() -> void:
-	volume_label.text = "Volume %d%%" % roundi(float(volume_slider.value) * 100.0)
-	music_label.text = "Music %d%%" % roundi(float(music_slider.value) * 100.0)
-
-
-func _on_volume_changed(value: float) -> void:
-	Settings.set_master_volume(value)
-	_update_audio_labels()
-
-
-func _on_music_changed(value: float) -> void:
-	Settings.set_music_volume(value)
-	_update_audio_labels()
+func _on_settings_closed() -> void:
+	_settings_screen = null
+	blocked = false
+	layout_root.visible = true
+	resume_button.grab_focus()
 
 
 func _on_restart_pressed() -> void:

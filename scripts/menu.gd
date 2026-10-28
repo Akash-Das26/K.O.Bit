@@ -3,10 +3,7 @@ extends Control
 @onready var best_label: Label = $BestLabel
 @onready var stage_button: Button = $CenterContainer/VBoxContainer/StageButton
 @onready var start_button: Button = $CenterContainer/VBoxContainer/Survival
-@onready var volume_slider: HSlider = $VolumeRow/VolumeSlider
-@onready var volume_label: Label = $VolumeRow/VolumeLabel
-@onready var music_slider: HSlider = $MusicRow/MusicSlider
-@onready var music_label: Label = $MusicRow/MusicLabel
+@onready var settings_button: Button = $CenterContainer/VBoxContainer/ButtonRow/Settings
 
 
 func _ready() -> void:
@@ -18,10 +15,12 @@ func _ready() -> void:
 	else:
 		best_label.visible = false
 	# Keyboard and gamepad both need somewhere to start from.
-	_sync_audio()
-	volume_slider.value_changed.connect(_on_volume_changed)
-	music_slider.value_changed.connect(_on_music_changed)
-	start_button.grab_focus()
+	if GameState.menu_focus_hint == "settings":
+		GameState.menu_focus_hint = ""
+		settings_button.grab_focus()
+	else:
+		GameState.menu_focus_hint = ""
+		start_button.grab_focus()
 
 
 func _format_time(seconds: float) -> String:
@@ -30,27 +29,6 @@ func _format_time(seconds: float) -> String:
 
 func _refresh_stage() -> void:
 	stage_button.text = "Stage: %s" % GameState.stage_name()
-
-
-func _sync_audio() -> void:
-	volume_slider.value = Settings.master_volume
-	music_slider.value = Settings.music_volume
-	_update_audio_labels()
-
-
-func _update_audio_labels() -> void:
-	volume_label.text = "Volume %d%%" % roundi(float(volume_slider.value) * 100.0)
-	music_label.text = "Music %d%%" % roundi(float(music_slider.value) * 100.0)
-
-
-func _on_volume_changed(value: float) -> void:
-	Settings.set_master_volume(value)
-	_update_audio_labels()
-
-
-func _on_music_changed(value: float) -> void:
-	Settings.set_music_volume(value)
-	_update_audio_labels()
 
 
 func _on_stage_pressed() -> void:
@@ -68,6 +46,10 @@ func _on_round_pressed(rounds: int) -> void:
 
 func _on_hardcore_pressed() -> void:
 	GameState.start_hardcore()
+
+
+func _on_settings_pressed() -> void:
+	GameState.goto_scene(GameState.SETTINGS_SCENE)
 
 
 func _on_exit_pressed() -> void:
