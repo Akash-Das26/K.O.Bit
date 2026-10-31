@@ -33,7 +33,7 @@ func _ready() -> void:
 	mode_line.text = GameState.results_mode_line()
 	_best_text = _best_row_text()
 	_best_is_new = _run_set_a_best()
-	var rank := _rank()
+	var rank := String(_result.get("rank", GameState.rank_for(_result)))
 	_set_row("rank", rank, rank == "S")
 	play_button.pressed.connect(_on_play_again_pressed)
 	menu_button.pressed.connect(_on_main_menu_pressed)
@@ -117,25 +117,6 @@ func _run_set_a_best() -> bool:
 		if bool(flags[key]):
 			return true
 	return false
-
-
-## A single letter for the run: kills, best combo, cleared rounds and a win
-## all count, and survival runs get a little credit for lasting longer.
-func _rank() -> String:
-	var score := int(_result.get("kills", 0)) * 2
-	score += int(_result.get("max_combo", 0)) * 5
-	score += int(_result.get("rounds_cleared", 0)) * 15
-	if String(_result.get("outcome", "lose")) == "win":
-		score += 40
-	if int(_result.get("mode", GameState.Mode.SURVIVAL)) == GameState.Mode.SURVIVAL:
-		score += int(float(_result.get("seconds", 0.0)) / 10.0)
-	if score >= 150:
-		return "S"
-	if score >= 100:
-		return "A"
-	if score >= 60:
-		return "B"
-	return "C"
 
 
 func _best_row_text() -> String:

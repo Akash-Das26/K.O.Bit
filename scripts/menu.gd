@@ -1,6 +1,7 @@
 extends Control
 
 @onready var best_label: Label = $BestLabel
+@onready var rank_label: Label = $RankLabel
 @onready var stage_button: Button = $CenterContainer/VBoxContainer/StageButton
 @onready var start_button: Button = $CenterContainer/VBoxContainer/Survival
 @onready var settings_button: Button = $CenterContainer/VBoxContainer/ButtonRow/Settings
@@ -14,6 +15,7 @@ func _ready() -> void:
 			int(best["kills"]), _format_time(float(best["seconds"]))]
 	else:
 		best_label.visible = false
+	_refresh_ranks()
 	# Keyboard and gamepad both need somewhere to start from.
 	if GameState.menu_focus_hint == "settings":
 		GameState.menu_focus_hint = ""
@@ -29,6 +31,26 @@ func _format_time(seconds: float) -> String:
 
 func _refresh_stage() -> void:
 	stage_button.text = "Stage: %s" % GameState.stage_name()
+
+
+## Best letter per mode, so a rank is something to chase between runs.
+func _refresh_ranks() -> void:
+	var text := ""
+	var modes := [
+		[GameState.Mode.SURVIVAL, "Survival"],
+		[GameState.Mode.ROUNDS, "Rounds"],
+		[GameState.Mode.HARDCORE, "Hardcore"],
+	]
+	for entry in modes:
+		var rank := GameState.get_best_rank(int(entry[0]))
+		if rank == "":
+			continue
+		if text != "":
+			text += "    "
+		text += "%s %s" % [String(entry[1]), rank]
+	rank_label.visible = text != ""
+	if rank_label.visible:
+		rank_label.text = "Best ranks:  " + text
 
 
 func _on_stage_pressed() -> void:

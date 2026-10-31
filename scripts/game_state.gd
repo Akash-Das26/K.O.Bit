@@ -25,6 +25,10 @@ const LANE_MAX_Y_DESERT := 236.0
 ## Rounds-mode best times are stored once per round count.
 const ROUNDS_COUNTS := [3, 5, 7, 10]
 
+## Best rank per mode, stored as an index into RANK_ORDER (-1 = none yet).
+const RANK_SECTION := "ranks"
+const RANK_ORDER := ["C", "B", "A", "S"]
+
 var mode: Mode = Mode.SURVIVAL
 var total_rounds := 0
 var stage: Stage = Stage.STREET
@@ -128,6 +132,59 @@ func save_hardcore_round(reached: int) -> bool:
 	return _write_scores(cfg)
 
 
+## A single letter for a run: kills, best combo, cleared rounds, a win bonus
+## and (in Survival) how long the run lasted, capped so time alone cannot
+## carry a run. Thresholds: C < 70, B < 120, A < 180, S >= 180.
+func rank_for(result: Dictionary) -> String:
+	var score := int(result.get("kills", 0)) * 2
+	score += int(result.get("max_combo", 0)) * 5
+	score += int(result.get("rounds_cleared", 0)) * 15
+	if String(result.get("outcome", "lose")) == "win":
+		score += 40
+	if int(result.get("mode", Mode.SURVIVAL)) == Mode.SURVIVAL:
+		score += mini(int(float(result.get("seconds", 0.0)) / 15.0), 40)
+	if score >= 180:
+		return "S"
+	if score >= 120:
+		return "A"
+	if score >= 70:
+		return "B"
+	return "C"
+
+
+func rank_index(rank: String) -> int:
+	return RANK_ORDER.find(rank)
+
+
+func _rank_key(run_mode: int) -> String:
+	if run_mode == Mode.ROUNDS:
+		return "rounds"
+	if run_mode == Mode.HARDCORE:
+		return "hardcore"
+	return "survival"
+
+
+## "" when the mode has never been played.
+func get_best_rank(run_mode: int) -> String:
+	var cfg := _read_scores()
+	var idx := int(cfg.get_value(RANK_SECTION, _rank_key(run_mode), -1))
+	if idx < 0 or idx >= RANK_ORDER.size():
+		return ""
+	return String(RANK_ORDER[idx])
+
+
+func save_rank(run_mode: int, rank: String) -> bool:
+	var idx := rank_index(rank)
+	if idx < 0:
+		return false
+	var cfg := _read_scores()
+	var key := _rank_key(run_mode)
+	if idx <= int(cfg.get_value(RANK_SECTION, key, -1)):
+		return false
+	cfg.set_value(RANK_SECTION, key, idx)
+	return _write_scores(cfg)
+
+
 ## Stores the run's new-best flags into result["new_best"] and remembers the
 ## result for the results screen. Never overwrites a better stored score.
 func submit_result(result: Dictionary) -> Dictionary:
@@ -139,6 +196,9 @@ func submit_result(result: Dictionary) -> Dictionary:
 	}
 	var run_mode := int(result.get("mode", Mode.SURVIVAL))
 	var outcome := String(result.get("outcome", "lose"))
+	var rank := rank_for(result)
+	result["rank"] = rank
+	save_rank(run_mode, rank)
 	if run_mode == Mode.SURVIVAL:
 		flags["survival"] = save_survival(
 			int(result.get("kills", 0)), float(result.get("seconds", 0.0)))

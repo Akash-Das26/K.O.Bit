@@ -16,4 +16,7 @@ if ! command -v "$GODOT" >/dev/null 2>&1 && [ ! -x "$GODOT" ]; then
 	exit 1
 fi
 
+echo "Importing project assets..."
+"$GODOT" --headless --path . --import
+
 exec "$GODOT" --headless --path . res://tests/smoke_test.tscn

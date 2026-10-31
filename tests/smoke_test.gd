@@ -8,6 +8,8 @@ extends Node2D
 
 const MAIN_GAME := preload("res://scenes/main_game.tscn")
 const RESULTS := preload("res://scenes/results.tscn")
+const MENU := preload("res://scenes/menu.tscn")
+const SETTINGS_SCENE := preload("res://scenes/settings_screen.tscn")
 const SCORES_PATH := "user://scores.cfg"
 const BURST_COMBO := 10
 
@@ -45,6 +47,13 @@ func _clear_enemies(game: Node) -> void:
 		if child is Enemy:
 			child.queue_free()
 	await get_tree().process_frame
+
+
+func has_key(action: String, code: int) -> bool:
+	for event in InputMap.action_get_events(action):
+		if event is InputEventKey and int(event.physical_keycode) == code:
+			return true
+	return false
 
 
 func _run() -> void:
@@ -155,6 +164,36 @@ func _run() -> void:
 	Input.action_release("player_move_right")
 	ok(player.position.x <= 398.0, "solid prop blocks movement", str(player.position.x))
 
+	# --- dash ----------------------------------------------------------
+	_clear_enemies(game)
+	player.position = Vector2(300, 200)
+	player.state = Fighter.State.IDLE
+	player.face(1)
+	player.health = player.max_health
+	player.health_changed.emit(player.health, player.max_health)
+	player.dash_cooldown_left = 0.0
+	player.press_dash()
+	ok(player.is_dashing, "dash starts")
+	await wait(0.3)
+	ok(not player.is_dashing, "dash ends", str(player.position.x))
+	ok(player.position.x >= 330.0, "dash covers ground", str(player.position.x))
+	var dash_x := player.position.x
+	player.press_dash()
+	await wait(0.1)
+	ok(absf(player.position.x - dash_x) < 1.0, "dash respects its cooldown",
+		str(player.position.x))
+
+	player.dash_cooldown_left = 0.0
+	player.position = Vector2(300, 200)
+	player.press_dash()
+	await get_tree().physics_frame
+	var hp := player.health
+	player.take_hit(10, 1, 0.0)
+	ok(player.health == hp, "dash i-frames dodge a hit", str(player.health))
+	await wait(0.3)
+	player.take_hit(10, 1, 0.0)
+	ok(player.health == hp - 10, "i-frames end with the dash", str(player.health))
+
 	# --- rage mode -----------------------------------------------------
 	player.health = 25
 	player.health_changed.emit(25, player.max_health)
@@ -200,6 +239,21 @@ func _run() -> void:
 	ok(not game.pause_menu.blocked, "settings overlay closes cleanly")
 	game.pause_menu._on_resume_pressed()
 
+	var settings_page = SETTINGS_SCENE.instantiate()
+	add_child(settings_page)
+	await get_tree().process_frame
+	ok(settings_page.rows_box.get_child_count() == Settings.CONTROL_ACTIONS.size(),
+		"settings lists every rebindable action",
+		"%d rows" % settings_page.rows_box.get_child_count())
+	ok(Settings.CONTROL_ACTIONS.has("player_dash"), "dash is rebindable")
+	ok(Settings.binding_keys("player_dash")[0] == KEY_L, "dash defaults to L")
+	ok(Settings.binding_pad("player_dash") == JOY_BUTTON_RIGHT_SHOULDER,
+		"dash has a gamepad default")
+	ok(InputMap.has_action("player_dash") and has_key("player_dash", KEY_L),
+		"dash action is wired")
+	settings_page.queue_free()
+	await get_tree().process_frame
+
 	# --- results screen and rank ---------------------------------------
 	GameState.mode = GameState.Mode.ROUNDS
 	GameState.total_rounds = 3
@@ -208,9 +262,9 @@ func _run() -> void:
 		"stage": int(GameState.Stage.STREET),
 		"total_rounds": 3,
 		"outcome": "win",
-		"kills": 20,
+		"kills": 30,
 		"seconds": 90.0,
-		"max_combo": 8,
+		"max_combo": 12,
 		"rounds_cleared": 3,
 		"round_reached": 3,
 		"player_health_left": 40,
@@ -232,6 +286,33 @@ func _run() -> void:
 	ok(int(GameState.get_best_survival()["kills"]) == 5, "survival score reads back")
 	ok(GameState.save_rounds(3, 40.0), "rounds score saves")
 	ok(not GameState.save_rounds(3, 41.0), "slower rounds run rejected")
+
+	# --- ranks ---------------------------------------------------------
+	ok(GameState.rank_for({"mode": GameState.Mode.ROUNDS, "outcome": "win",
+		"kills": 25, "max_combo": 10, "rounds_cleared": 3}) == "S", "S rank threshold")
+	ok(GameState.rank_for({"mode": GameState.Mode.ROUNDS, "outcome": "win",
+		"kills": 12, "max_combo": 6, "rounds_cleared": 3}) == "A", "A rank threshold")
+	ok(GameState.rank_for({"mode": GameState.Mode.SURVIVAL, "outcome": "lose",
+		"kills": 20, "max_combo": 5, "seconds": 90.0}) == "B", "B rank threshold")
+	ok(GameState.rank_for({"mode": GameState.Mode.SURVIVAL, "outcome": "lose",
+		"kills": 8, "max_combo": 2, "seconds": 40.0}) == "C", "C rank threshold")
+
+	GameState.submit_result({
+		"mode": GameState.Mode.ROUNDS, "stage": int(GameState.Stage.STREET),
+		"total_rounds": 3, "outcome": "win", "kills": 25, "seconds": 50.0,
+		"max_combo": 10, "rounds_cleared": 3, "round_reached": 3,
+		"player_health_left": 60})
+	ok(GameState.get_best_rank(GameState.Mode.ROUNDS) == "S", "rounds best rank stored")
+	ok(GameState.get_best_rank(GameState.Mode.HARDCORE) == "", "unplayed mode has no rank")
+
+	var menu = MENU.instantiate()
+	add_child(menu)
+	await get_tree().process_frame
+	var rank_line: Label = menu.rank_label
+	ok(rank_line.visible and rank_line.text.contains("Rounds S"),
+		"menu shows the best rank", rank_line.text)
+	menu.queue_free()
+	await get_tree().process_frame
 
 	# --- stage switching -----------------------------------------------
 	GameState.select_stage(GameState.Stage.DESERT)
