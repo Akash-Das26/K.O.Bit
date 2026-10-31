@@ -59,6 +59,9 @@ const BURST_DAMAGE := 15
 const BURST_KNOCKBACK := 220.0
 const BURST_RADIUS := 130.0
 
+## A round taken without taking damage pays extra health on top of the heal.
+const FLAWLESS_BONUS := 15
+
 ## Ground-plane footprints used when checking spawns against obstacles.
 const FIGHTER_FOOTPRINT := Rect2(-6, -3, 12, 6)
 const BARREL_FOOTPRINT := Rect2(-10, -4, 20, 8)
@@ -81,6 +84,8 @@ var round_over := false
 var end_done := false
 var current_round := 1
 var round_pending := 0
+## Damage the player has taken in the current round (for the flawless bonus).
+var round_damage_taken := 0
 var enemies_alive := 0
 var wave_busy := false
 var hardcore := false
@@ -421,7 +426,8 @@ func _combo_burst() -> void:
 		enemy.take_hit(BURST_DAMAGE, dir, BURST_KNOCKBACK, false, true, player)
 
 
-func _on_player_hurt(_damage: int, _was_fatal: bool) -> void:
+func _on_player_hurt(damage: int, _was_fatal: bool) -> void:
+	round_damage_taken += maxi(damage, 0)
 	hud.hide_combo()
 
 
@@ -435,6 +441,7 @@ func _next_round() -> void:
 	if round_over:
 		return
 	current_round += 1
+	round_damage_taken = 0
 	_boss_round = GameState.mode != GameState.Mode.SURVIVAL \
 		and current_round >= GameState.total_rounds
 	var banner := "ROUND %d / %d" % [current_round, GameState.total_rounds]
@@ -550,17 +557,21 @@ func _advance_wave() -> void:
 func _round_cleared() -> void:
 	if round_over:
 		return
+	var flawless := round_damage_taken == 0
 	round_over = true
 	Fx.play("round_clear")
-	hud.show_banner("ROUND CLEAR", ROUND_BANNER_TIME)
+	hud.show_banner("FLAWLESS ROUND!" if flawless else "ROUND CLEAR", ROUND_BANNER_TIME)
 	if current_round >= GameState.total_rounds:
 		await get_tree().create_timer(ROUND_BANNER_TIME, false).timeout
 		if not is_inside_tree():
 			return
 		_win()
 		return
+	var heal := FLAWLESS_BONUS if flawless else 0
 	if not hardcore:
-		player.health = mini(player.health + ROUND_HEAL, player.max_health)
+		heal += ROUND_HEAL
+	if heal > 0:
+		player.health = mini(player.health + heal, player.max_health)
 		player.health_changed.emit(player.health, player.max_health)
 	await get_tree().create_timer(ROUND_BREAK, false).timeout
 	if not is_inside_tree():

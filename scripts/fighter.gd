@@ -289,6 +289,7 @@ func take_hit(damage: int, dir: int, knockback: float, was_fatal: bool = false, 
 		return
 	health = maxi(health - damage, 0)
 	health_changed.emit(health, max_health)
+	Fx.damage_number(global_position - Vector2(0, 44.0 + height), damage, is_player)
 	hitbox.set_deferred("monitoring", false)
 	dive_speed = 0.0
 	combo_count = 0

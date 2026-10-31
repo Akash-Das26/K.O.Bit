@@ -10,6 +10,7 @@ const DASH_SPEED := 260.0
 const DASH_TIME := 0.16
 const DASH_INVULN := 0.1
 const DASH_COOLDOWN := 0.55
+const AIR_JUMPS := 1
 
 var is_raging := false
 var is_dashing := false
@@ -23,6 +24,7 @@ var _dash_time_left := 0.0
 var _dash_invuln_left := 0.0
 var _dash_dir := 1
 var _base_move_speed := 80.0
+var _air_jumps := AIR_JUMPS
 
 
 func _ready() -> void:
@@ -64,6 +66,20 @@ func _process(delta: float) -> void:
 	sprite.modulate = Color(1.0, 0.72 - 0.2 * pulse, 0.72 - 0.2 * pulse, 1.0)
 
 
+## One extra jump in the air, refreshed on landing.
+func jump() -> void:
+	if height <= 0.0:
+		_air_jumps = AIR_JUMPS
+		super.jump()
+		return
+	if _air_jumps > 0 and state != State.HURT and state != State.DEAD \
+			and state != State.ATTACK:
+		_air_jumps -= 1
+		height_velocity = jump_speed
+		Fx.play("jump")
+		Fx.spark(global_position - Vector2(0, 24.0 + height), false)
+
+
 func get_animations() -> Dictionary:
 	return {
 		"idle":      {"path": DIR + "idle.png",      "frames": 4,  "fps": 6,  "loop": true},
@@ -93,6 +109,8 @@ func think(delta: float) -> void:
 	if _combo_window <= 0.0 and state != State.ATTACK:
 		_combo_step = 0
 		combo_count = 0
+	if height <= 0.0:
+		_air_jumps = AIR_JUMPS
 	dash_cooldown_left = maxf(dash_cooldown_left - delta, 0.0)
 	if is_dashing:
 		_update_dash(delta)

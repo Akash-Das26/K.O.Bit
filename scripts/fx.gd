@@ -8,6 +8,8 @@ const SHAKE_HEAVY := 2.0
 const SHAKE_KILL := 4.0
 const SHAKE_PLAYER_HIT := 2.0
 const FLASH_SECONDS := 0.08
+const DAMAGE_NUMBER_TIME := 0.55
+const DAMAGE_NUMBER_RISE := 24.0
 const SOUND_ENABLED := true
 
 const HITSTOP_SCALE := 0.05
@@ -57,7 +59,7 @@ const SOUND_DB := {
 }
 
 ## Call counters, handy for headless proof runs.
-var stats := {"flash": 0, "spark": 0, "sound": 0, "shake": 0, "hitstop": 0}
+var stats := {"flash": 0, "spark": 0, "sound": 0, "shake": 0, "hitstop": 0, "damage_number": 0}
 
 var _flashes: Array[Dictionary] = []
 var _shake_cam: Camera2D = null
@@ -248,6 +250,37 @@ func _spark_texture() -> Texture2D:
 		img.fill(Color.WHITE)
 		_spark_tex = ImageTexture.create_from_image(img)
 	return _spark_tex
+
+
+# --- damage numbers ----------------------------------------------------
+
+## Floating hit number: white for damage dealt, gold when it is the player
+## taking the hit. Lives on wall-clock tweens like the rest of the juice.
+func damage_number(pos: Vector2, amount: int, on_player := false) -> void:
+	if amount <= 0:
+		return
+	stats["damage_number"] = int(stats["damage_number"]) + 1
+	var label := Label.new()
+	label.text = str(amount)
+	label.add_theme_font_size_override("font_size", 15 if on_player else 12)
+	label.add_theme_color_override("font_color",
+		Color(1.0, 0.85, 0.3) if on_player else Color(1, 1, 1))
+	label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
+	label.add_theme_constant_override("outline_size", 4)
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	label.z_index = 200
+	label.position = pos + Vector2(randf_range(-6.0, 6.0), -10.0)
+	label.process_mode = Node.PROCESS_MODE_ALWAYS
+	var parent: Node = get_tree().current_scene
+	if parent == null:
+		parent = get_tree().root
+	parent.add_child(label)
+	var tween := label.create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(label, "position:y",
+		label.position.y - DAMAGE_NUMBER_RISE, DAMAGE_NUMBER_TIME)
+	tween.tween_property(label, "modulate:a", 0.0, DAMAGE_NUMBER_TIME)
+	tween.chain().tween_callback(label.queue_free)
 
 
 # --- sound -------------------------------------------------------------

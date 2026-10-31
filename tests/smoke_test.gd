@@ -120,6 +120,8 @@ func _run() -> void:
 	ok(attacker.facing == 1, "perfectly aligned target keeps facing", str(attacker.facing))
 	ok(is_equal_approx(attacker.hitbox.position.x, 20.0), "hitbox offset survives alignment",
 		str(attacker.hitbox.position.x))
+	ok(int(Fx.stats["damage_number"]) > 0, "hit damage numbers spawn",
+		str(Fx.stats["damage_number"]))
 
 	# --- props, food and obstacles -------------------------------------
 	_clear_enemies(game)
@@ -193,6 +195,27 @@ func _run() -> void:
 	await wait(0.3)
 	player.take_hit(10, 1, 0.0)
 	ok(player.health == hp - 10, "i-frames end with the dash", str(player.health))
+
+	# --- double jump ---------------------------------------------------
+	player.position = Vector2(300, 200)
+	player.height = 0.0
+	player.height_velocity = 0.0
+	player.state = Fighter.State.IDLE
+	player.jump()
+	ok(player.height_velocity > 0.0, "ground jump")
+	await wait(0.12)
+	player.jump()
+	ok(is_equal_approx(player.height_velocity, player.jump_speed),
+		"air jump restores the rise", str(player.height_velocity))
+	await get_tree().physics_frame
+	var falling := player.height_velocity
+	player.jump()
+	await get_tree().physics_frame
+	ok(player.height_velocity < falling, "no second air jump", str(player.height_velocity))
+	await wait(0.7)
+	ok(player.height == 0.0, "player lands", str(player.height))
+	player.jump()
+	ok(player.height_velocity > 0.0, "air jump refreshed on landing")
 
 	# --- rage mode -----------------------------------------------------
 	player.health = 25
@@ -327,6 +350,29 @@ func _run() -> void:
 		"desert lane applied", str(GameState.lane_min_y))
 
 	game.queue_free()
+	await get_tree().process_frame
+
+	# --- flawless round bonus ------------------------------------------
+	GameState.mode = GameState.Mode.ROUNDS
+	GameState.total_rounds = 3
+	GameState.select_stage(GameState.Stage.STREET)
+	var rounds_game := MAIN_GAME.instantiate()
+	get_tree().root.add_child(rounds_game)
+	await wait(2.2)
+	ok(rounds_game.current_round == 1, "rounds game starts round 1")
+	var round_player: Fighter = rounds_game.player
+	round_player.health = 50
+	round_player.health_changed.emit(50, round_player.max_health)
+	rounds_game.round_damage_taken = 0
+	for child in rounds_game.fighters.get_children():
+		if child is Enemy:
+			child.take_hit(99999, 1, 0.0)
+	await wait(0.2)
+	ok(String(rounds_game.hud.banner.text) == "FLAWLESS ROUND!", "flawless round banner",
+		String(rounds_game.hud.banner.text))
+	await wait(1.6)
+	ok(round_player.health == 90, "flawless round heals", str(round_player.health))
+	rounds_game.queue_free()
 	await get_tree().process_frame
 
 
