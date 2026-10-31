@@ -53,6 +53,9 @@ func _on_area_entered(area: Area2D) -> void:
 		return
 	if absf(fighter.global_position.y - global_position.y) > fighter.depth_tolerance:
 		return
+	# Leave the food on the ground rather than burning it for a +0 heal.
+	if fighter.health >= fighter.max_health:
+		return
 	_collect(fighter)
 
 

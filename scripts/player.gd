@@ -39,7 +39,7 @@ func get_attacks() -> Dictionary:
 		"punch":     {"damage": 8,  "knockback": 80.0,  "active": [1],       "heavy": false, "sound": "punch_hit"},
 		"kick":      {"damage": 14, "knockback": 180.0, "active": [2, 3],    "heavy": true,  "sound": "kick_hit"},
 		"jump_kick": {"damage": 10, "knockback": 120.0, "active": [1, 2],    "heavy": true,  "sound": "heavy_hit"},
-		"dive_kick": {"damage": 16, "knockback": 160.0, "active": [2, 3, 4], "heavy": true,  "sound": "heavy_hit"},
+		"dive_kick": {"damage": 16, "knockback": 160.0, "active": [0, 1, 2, 3, 4], "heavy": true,  "sound": "heavy_hit"},
 	}
 
 
@@ -123,4 +123,7 @@ func start_dive_kick() -> void:
 		dive_speed = 260.0
 		dive_forward = 110.0
 		height_velocity = 0.0
+		# A dive from the jump apex is over in ~0.1 s, before frame 1, so the
+		# hitbox has to be armed here instead of on the first frame change.
+		hitbox.set_deferred("monitoring", true)
 		Fx.play("dive_kick")
