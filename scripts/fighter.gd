@@ -77,6 +77,7 @@ var blocker_y := 0.0
 var _base_sprite_y := 0.0
 var _base_hurtbox_y := 0.0
 var _base_hitbox_y := 0.0
+var _base_hitbox_x := 0.0
 
 # Subclasses override these three:
 func get_animations() -> Dictionary: return {}
@@ -89,6 +90,7 @@ func _ready() -> void:
 	_base_sprite_y = sprite.position.y
 	_base_hurtbox_y = hurtbox.position.y
 	_base_hitbox_y = hitbox.position.y
+	_base_hitbox_x = hitbox.position.x
 	collision_mask = 0
 	var body_shape := get_node_or_null("CollisionShape2D") as CollisionShape2D
 	if body_shape != null:
@@ -244,9 +246,13 @@ func _unstick() -> void:
 
 
 func face(dir: int) -> void:
+	# signf() of a perfectly aligned target is 0: keep the current facing
+	# instead of collapsing it (and the hitbox offset) to zero for good.
+	if dir == 0:
+		return
 	facing = dir
 	sprite.flip_h = (dir < 0) if sprite_faces_right else (dir > 0)
-	hitbox.position.x = absf(hitbox.position.x) * dir
+	hitbox.position.x = _base_hitbox_x * dir
 
 
 func jump() -> void:
