@@ -5,6 +5,7 @@ signal health_changed(current: int, maximum: int)
 signal died
 signal hit_landed(attacker: Fighter, target: Fighter, damage: int, attack_name: String, hit_pos: Vector2)
 signal hurt(damage: int, was_fatal: bool)
+signal rage_changed(active: bool)
 
 enum State { IDLE, WALK, JUMP, ATTACK, HURT, DEAD }
 
@@ -70,6 +71,10 @@ static var debug_verbose := true
 var blocked_x := false
 var blocker_y := 0.0
 
+## Targets already struck by the current swing, so one attack can only hit a
+## given fighter or prop once even if it leaves and re-enters the hitbox.
+var _hit_this_swing: Array[Node] = []
+
 @onready var sprite: AnimatedSprite2D = $Sprite
 @onready var hitbox: Area2D = $Hitbox
 @onready var hurtbox: Area2D = $Hurtbox
@@ -107,7 +112,7 @@ func _physics_process(delta: float) -> void:
 	# A hitbox may only be armed while this fighter is really in an active
 	# attack frame. Anything that interrupted an attack (hurt, stun, landing,
 	# death, a scene/state change) therefore can never leave a hitbox on.
-	if hitbox != null and not is_attack_active():
+	if hitbox != null and hitbox.monitoring and not is_attack_active():
 		hitbox.set_deferred("monitoring", false)
 	if state != State.DEAD:
 		think(delta)
@@ -268,8 +273,13 @@ func attack(attack_name: String) -> void:
 		return
 	state = State.ATTACK
 	current_attack = attack_name
+	_hit_this_swing.clear()
 	Fx.play("whoosh")
 	sprite.play(attack_name)
+	# Frame 0 never emits frame_changed, so arm the hitbox here when the
+	# attack is already active on its first frame.
+	if sprite.frame in _attack_data().get("active", []):
+		hitbox.set_deferred("monitoring", true)
 
 
 func take_hit(damage: int, dir: int, knockback: float, was_fatal: bool = false, is_heavy: bool = false, attacker: Fighter = null) -> void:
@@ -279,6 +289,7 @@ func take_hit(damage: int, dir: int, knockback: float, was_fatal: bool = false, 
 		return
 	health = maxi(health - damage, 0)
 	health_changed.emit(health, max_health)
+	Fx.damage_number(global_position - Vector2(0, 44.0 + height), damage, is_player)
 	hitbox.set_deferred("monitoring", false)
 	dive_speed = 0.0
 	combo_count = 0
@@ -502,8 +513,9 @@ func _attack_data() -> Dictionary:
 
 func _strike_fighter(target: Fighter) -> void:
 	var data := _attack_data()
-	if data.is_empty():
+	if data.is_empty() or _hit_this_swing.has(target):
 		return
+	_hit_this_swing.append(target)
 	var damage := maxi(roundi(float(data["damage"]) * damage_mult), 1)
 	var is_heavy: bool = bool(data.get("heavy", false))
 	var hit_pos := (global_position + target.global_position) * 0.5 - Vector2(0, 24.0 + target.height)
@@ -518,8 +530,9 @@ func _strike_fighter(target: Fighter) -> void:
 
 func _strike_prop(prop: Node, prop_node: Node2D) -> void:
 	var data := _attack_data()
-	if data.is_empty():
+	if data.is_empty() or _hit_this_swing.has(prop_node):
 		return
+	_hit_this_swing.append(prop_node)
 	var damage := maxi(roundi(float(data["damage"]) * damage_mult), 1)
 	var pos := (global_position + prop_node.global_position) * 0.5 - Vector2(0, 20)
 	Fx.spark(pos, false)

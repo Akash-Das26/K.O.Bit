@@ -21,14 +21,14 @@ const CONTROLS_SECTION := "controls"
 ## Gameplay actions whose keyboard/gamepad-buttons are rebindable.
 const CONTROL_ACTIONS := [
 	"player_move_left", "player_move_right", "player_move_up", "player_move_down",
-	"player_jump", "player_punch", "player_kick", "pause",
+	"player_jump", "player_punch", "player_kick", "player_dash", "pause",
 ]
 ## Movement keeps its fixed stick / d-pad events; only its keys are editable.
 const MOVE_ACTIONS := [
 	"player_move_left", "player_move_right", "player_move_up", "player_move_down",
 ]
 ## Actions with one editable gamepad-button slot.
-const PAD_ACTIONS := ["player_jump", "player_punch", "player_kick", "pause"]
+const PAD_ACTIONS := ["player_jump", "player_punch", "player_kick", "player_dash", "pause"]
 
 const ACTION_LABELS := {
 	"player_move_left": "Move Left",
@@ -38,6 +38,7 @@ const ACTION_LABELS := {
 	"player_jump": "Jump",
 	"player_punch": "Punch",
 	"player_kick": "Kick",
+	"player_dash": "Dash",
 	"pause": "Pause",
 }
 
@@ -72,6 +73,7 @@ const DEFAULTS := {
 	"player_jump": {"keys": [KEY_SPACE, 0], "pad": JOY_BUTTON_A},
 	"player_punch": {"keys": [KEY_J, 0], "pad": JOY_BUTTON_X},
 	"player_kick": {"keys": [KEY_K, 0], "pad": JOY_BUTTON_B},
+	"player_dash": {"keys": [KEY_L, 0], "pad": JOY_BUTTON_RIGHT_SHOULDER},
 	"pause": {"keys": [KEY_ESCAPE, 0], "pad": JOY_BUTTON_START},
 }
 
@@ -222,6 +224,9 @@ func save_controls() -> void:
 ## and d-pad buttons are preserved, and ui_* actions are never touched.
 func apply_controls() -> void:
 	for action in CONTROL_ACTIONS:
+		# Actions added by a newer build still get an InputMap entry.
+		if not InputMap.has_action(action):
+			InputMap.add_action(action)
 		var keep: Array[InputEvent] = []
 		for event in InputMap.action_get_events(action):
 			if event is InputEventKey:

@@ -9,6 +9,7 @@ extends CanvasLayer
 @onready var combo_label: Label = $ComboLabel
 @onready var boss_bar: ProgressBar = $BossBar
 @onready var boss_label: Label = $BossLabel
+@onready var rage_label: Label = $RageLabel
 
 var _banner_token := 0
 var _combo_token := 0
@@ -29,7 +30,14 @@ func hide_target() -> void:
 
 
 func set_info(text: String) -> void:
+	# Called every frame; skip identical text so the label does not re-layout.
+	if info_label.text == text:
+		return
 	info_label.text = text
+
+
+func show_rage(active: bool) -> void:
+	rage_label.visible = active
 
 
 func show_banner(text: String, seconds: float) -> void:

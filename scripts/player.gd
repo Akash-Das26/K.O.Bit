@@ -1,12 +1,30 @@
 extends Fighter
 
+## Rage: below this share of max health the player hits harder and glows red.
 const DIR := "res://assets/Spritesheets/Brawler Girl/"
 const COMBO_WINDOW := 0.45
 const COMBO_ATTACKS := ["jab", "punch", "kick"]
+const RAGE_THRESHOLD := 0.3
+const RAGE_DAMAGE_MULT := 1.5
+const DASH_SPEED := 260.0
+const DASH_TIME := 0.16
+const DASH_INVULN := 0.1
+const DASH_COOLDOWN := 0.55
+const AIR_JUMPS := 1
+
+var is_raging := false
+var is_dashing := false
+var dash_cooldown_left := 0.0
 
 var _combo_step := 0
 var _combo_window := 0.0
 var _jab_buffered := false
+var _rage_time := 0.0
+var _dash_time_left := 0.0
+var _dash_invuln_left := 0.0
+var _dash_dir := 1
+var _base_move_speed := 80.0
+var _air_jumps := AIR_JUMPS
 
 
 func _ready() -> void:
@@ -17,6 +35,49 @@ func _ready() -> void:
 	fades_on_death = false
 	super._ready()
 	add_to_group("player")
+	health_changed.connect(_on_health_changed)
+	_base_move_speed = move_speed
+	_update_rage()
+
+
+## Low health turns on extra damage; the pulse makes it readable at a glance.
+func _update_rage() -> void:
+	var raging := state != State.DEAD and health > 0 \
+		and health <= roundi(float(max_health) * RAGE_THRESHOLD)
+	damage_mult = RAGE_DAMAGE_MULT if raging else 1.0
+	if raging == is_raging:
+		return
+	is_raging = raging
+	if not is_raging:
+		_rage_time = 0.0
+		sprite.modulate = Color(1, 1, 1, 1)
+	rage_changed.emit(is_raging)
+
+
+func _on_health_changed(_current: int, _maximum: int) -> void:
+	_update_rage()
+
+
+func _process(delta: float) -> void:
+	if not is_raging:
+		return
+	_rage_time += delta
+	var pulse := 0.5 + 0.5 * sin(_rage_time * 9.0)
+	sprite.modulate = Color(1.0, 0.72 - 0.2 * pulse, 0.72 - 0.2 * pulse, 1.0)
+
+
+## One extra jump in the air, refreshed on landing.
+func jump() -> void:
+	if height <= 0.0:
+		_air_jumps = AIR_JUMPS
+		super.jump()
+		return
+	if _air_jumps > 0 and state != State.HURT and state != State.DEAD \
+			and state != State.ATTACK:
+		_air_jumps -= 1
+		height_velocity = jump_speed
+		Fx.play("jump")
+		Fx.spark(global_position - Vector2(0, 24.0 + height), false)
 
 
 func get_animations() -> Dictionary:
@@ -48,8 +109,16 @@ func think(delta: float) -> void:
 	if _combo_window <= 0.0 and state != State.ATTACK:
 		_combo_step = 0
 		combo_count = 0
+	if height <= 0.0:
+		_air_jumps = AIR_JUMPS
+	dash_cooldown_left = maxf(dash_cooldown_left - delta, 0.0)
+	if is_dashing:
+		_update_dash(delta)
+		return
 	move_dir = Input.get_axis("player_move_left", "player_move_right")
 	move_dir_y = Input.get_axis("player_move_up", "player_move_down")
+	if Input.is_action_just_pressed("player_dash"):
+		press_dash()
 	if Input.is_action_just_pressed("player_jump"):
 		jump()
 	if Input.is_action_just_pressed("player_punch"):
@@ -58,10 +127,64 @@ func think(delta: float) -> void:
 		press_kick()
 
 
+# --- dash --------------------------------------------------------------
+
+## A short burst with a few invulnerable frames: the dodge button.
+func press_dash() -> void:
+	if is_dashing or dash_cooldown_left > 0.0:
+		return
+	if state == State.HURT or state == State.DEAD or state == State.ATTACK:
+		return
+	var dir := facing
+	if move_dir != 0.0:
+		dir = int(signf(move_dir))
+	_start_dash(dir)
+
+
+func _start_dash(dir: int) -> void:
+	is_dashing = true
+	_dash_dir = dir if dir != 0 else facing
+	_dash_time_left = DASH_TIME
+	_dash_invuln_left = DASH_INVULN
+	dash_cooldown_left = DASH_COOLDOWN
+	move_speed = DASH_SPEED
+	move_dir = float(_dash_dir)
+	move_dir_y = 0.0
+	face(_dash_dir)
+	Fx.play("whoosh")
+	Fx.shake(0.6, 0.08)
+
+
+func _update_dash(delta: float) -> void:
+	_dash_time_left = maxf(_dash_time_left - delta, 0.0)
+	_dash_invuln_left = maxf(_dash_invuln_left - delta, 0.0)
+	move_dir = float(_dash_dir)
+	move_dir_y = 0.0
+	if _dash_time_left <= 0.0 or state == State.HURT or state == State.DEAD:
+		_end_dash()
+
+
+func _end_dash() -> void:
+	if not is_dashing:
+		return
+	is_dashing = false
+	_dash_time_left = 0.0
+	move_speed = _base_move_speed
+
+
+## Invulnerable frames are the point of the dash.
+func take_hit(damage: int, dir: int, knockback: float, was_fatal: bool = false, is_heavy: bool = false, attacker: Fighter = null) -> void:
+	if _dash_invuln_left > 0.0:
+		return
+	super.take_hit(damage, dir, knockback, was_fatal, is_heavy, attacker)
+	if state == State.HURT or state == State.DEAD:
+		_end_dash()
+
+
 # --- jab combo ---------------------------------------------------------
 
 func press_jab() -> void:
-	if state == State.HURT or state == State.DEAD:
+	if is_dashing or state == State.HURT or state == State.DEAD:
 		return
 	if state == State.ATTACK:
 		if String(current_attack) in COMBO_ATTACKS:
@@ -97,7 +220,7 @@ func _on_anim_finished() -> void:
 # --- kicks -------------------------------------------------------------
 
 func press_kick() -> void:
-	if state == State.ATTACK or state == State.HURT or state == State.DEAD:
+	if is_dashing or state == State.ATTACK or state == State.HURT or state == State.DEAD:
 		return
 	if height > 0.0:
 		if Input.is_action_pressed("player_move_down"):
@@ -123,7 +246,4 @@ func start_dive_kick() -> void:
 		dive_speed = 260.0
 		dive_forward = 110.0
 		height_velocity = 0.0
-		# A dive from the jump apex is over in ~0.1 s, before frame 1, so the
-		# hitbox has to be armed here instead of on the first frame change.
-		hitbox.set_deferred("monitoring", true)
 		Fx.play("dive_kick")

@@ -33,6 +33,8 @@ func _ready() -> void:
 	mode_line.text = GameState.results_mode_line()
 	_best_text = _best_row_text()
 	_best_is_new = _run_set_a_best()
+	var rank := String(_result.get("rank", GameState.rank_for(_result)))
+	_set_row("rank", rank, rank == "S")
 	play_button.pressed.connect(_on_play_again_pressed)
 	menu_button.pressed.connect(_on_main_menu_pressed)
 	play_button.call_deferred("grab_focus")
@@ -64,6 +66,7 @@ func _build_rows() -> void:
 		["time", "Time"],
 		["max_combo", "Max combo"],
 		["rounds_cleared", "Rounds cleared"],
+		["rank", "Rank"],
 		["best", "Best"],
 	]
 	for pair in names:

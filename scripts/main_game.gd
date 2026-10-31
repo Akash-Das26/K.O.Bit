@@ -53,6 +53,15 @@ const ROUND_BARRELS := 2
 const MAX_FOOD := 3
 const DROP_APPLE_CHANCE := 0.2
 
+## Combo reward: every 10 hits in a row unleashes a close-range K.O. burst.
+const BURST_COMBO := 10
+const BURST_DAMAGE := 15
+const BURST_KNOCKBACK := 220.0
+const BURST_RADIUS := 130.0
+
+## A round taken without taking damage pays extra health on top of the heal.
+const FLAWLESS_BONUS := 15
+
 ## Ground-plane footprints used when checking spawns against obstacles.
 const FIGHTER_FOOTPRINT := Rect2(-6, -3, 12, 6)
 const BARREL_FOOTPRINT := Rect2(-10, -4, 20, 8)
@@ -75,6 +84,8 @@ var round_over := false
 var end_done := false
 var current_round := 1
 var round_pending := 0
+## Damage the player has taken in the current round (for the flawless bonus).
+var round_damage_taken := 0
 var enemies_alive := 0
 var wave_busy := false
 var hardcore := false
@@ -83,6 +94,7 @@ var boss: Boss = null
 var _barrels: Array[Node] = []
 var _food: Array[Node] = []
 var _boss_round := false
+var _next_burst := BURST_COMBO
 
 
 func _ready() -> void:
@@ -93,6 +105,7 @@ func _ready() -> void:
 	player.hit_landed.connect(_on_player_hit_landed)
 	player.hurt.connect(_on_player_hurt)
 	player.died.connect(_on_player_died)
+	player.rage_changed.connect(_on_player_rage_changed)
 	spawn_timer.wait_time = SPAWN_INTERVAL
 	spawn_timer.timeout.connect(_on_spawn_timeout)
 	_setup_camera()
@@ -112,6 +125,8 @@ func _process(delta: float) -> void:
 		run_seconds += delta
 		if is_instance_valid(player):
 			max_combo = maxi(max_combo, player.combo_count)
+			if player.combo_count < 2:
+				_next_burst = BURST_COMBO
 	if GameState.mode == GameState.Mode.SURVIVAL and not round_over:
 		elapsed += delta
 	_update_camera()
@@ -150,6 +165,11 @@ func _update_camera() -> void:
 func _load_stage() -> void:
 	for child in stage_holder.get_children():
 		child.queue_free()
+	# Stage props live in the y-sorted Fighters node; drop the previous stage's
+	# ones so a reload cannot leave ghost obstacles behind.
+	for child in fighters.get_children():
+		if child is Obstacle:
+			child.queue_free()
 	var scene: PackedScene = STAGE_STREET
 	if GameState.stage == GameState.Stage.DESERT:
 		scene = STAGE_DESERT
@@ -377,12 +397,42 @@ func _forget_food(pickup: Node) -> void:
 
 
 func _on_player_hit_landed(_attacker: Fighter, _target: Fighter, _damage: int, _attack_name: String, _hit_pos: Vector2) -> void:
+	if player.combo_count >= _next_burst:
+		_next_burst = ((player.combo_count / BURST_COMBO) + 1) * BURST_COMBO
+		_combo_burst.call_deferred()
 	if player.combo_count >= 2:
 		hud.show_combo(player.combo_count)
 
 
-func _on_player_hurt(_damage: int, _was_fatal: bool) -> void:
+## Every BURST_COMBO hits the player pays the combo off with a shockwave that
+## knocks back and damages everything close by.
+func _combo_burst() -> void:
+	if round_over or end_done or not is_instance_valid(player):
+		return
+	hud.show_banner("K.O. BURST!", 1.0)
+	Fx.play("boss_ko")
+	Fx.hitstop(Fx.HITSTOP_LIGHT)
+	Fx.shake(Fx.SHAKE_KILL, 0.3)
+	Fx.spark(player.global_position, true)
+	for child in fighters.get_children():
+		var enemy := child as Enemy
+		if enemy == null or enemy.state == Fighter.State.DEAD:
+			continue
+		if enemy.global_position.distance_to(player.global_position) > BURST_RADIUS:
+			continue
+		var dir := int(signf(enemy.global_position.x - player.global_position.x))
+		if dir == 0:
+			dir = player.facing
+		enemy.take_hit(BURST_DAMAGE, dir, BURST_KNOCKBACK, false, true, player)
+
+
+func _on_player_hurt(damage: int, _was_fatal: bool) -> void:
+	round_damage_taken += maxi(damage, 0)
 	hud.hide_combo()
+
+
+func _on_player_rage_changed(active: bool) -> void:
+	hud.show_rage(active)
 
 
 # --- rounds / hardcore ------------------------------------------------
@@ -391,6 +441,7 @@ func _next_round() -> void:
 	if round_over:
 		return
 	current_round += 1
+	round_damage_taken = 0
 	_boss_round = GameState.mode != GameState.Mode.SURVIVAL \
 		and current_round >= GameState.total_rounds
 	var banner := "ROUND %d / %d" % [current_round, GameState.total_rounds]
@@ -506,17 +557,21 @@ func _advance_wave() -> void:
 func _round_cleared() -> void:
 	if round_over:
 		return
+	var flawless := round_damage_taken == 0
 	round_over = true
 	Fx.play("round_clear")
-	hud.show_banner("ROUND CLEAR", ROUND_BANNER_TIME)
+	hud.show_banner("FLAWLESS ROUND!" if flawless else "ROUND CLEAR", ROUND_BANNER_TIME)
 	if current_round >= GameState.total_rounds:
 		await get_tree().create_timer(ROUND_BANNER_TIME, false).timeout
 		if not is_inside_tree():
 			return
 		_win()
 		return
+	var heal := FLAWLESS_BONUS if flawless else 0
 	if not hardcore:
-		player.health = mini(player.health + ROUND_HEAL, player.max_health)
+		heal += ROUND_HEAL
+	if heal > 0:
+		player.health = mini(player.health + heal, player.max_health)
 		player.health_changed.emit(player.health, player.max_health)
 	await get_tree().create_timer(ROUND_BREAK, false).timeout
 	if not is_inside_tree():
