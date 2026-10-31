@@ -113,6 +113,8 @@ func _start_telegraph() -> void:
 func _start_dash() -> void:
 	phase = Phase.DASH
 	_phase_left = DASH_TIME
+	# The charge is its own swing: it may hit each target once, like a punch.
+	_hit_this_swing.clear()
 	var target_x := target.position.x if target != null and is_instance_valid(target) else position.x
 	_dash_dir = 1 if target_x >= position.x else -1
 	face(_dash_dir)

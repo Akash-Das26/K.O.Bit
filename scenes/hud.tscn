@@ -24,6 +24,16 @@ theme_override_styles/fill = SubResource("StyleBoxFlat_player")
 value = 100.0
 show_percentage = false
 
+[node name="RageLabel" type="Label" parent="."]
+visible = false
+offset_left = 8.0
+offset_top = 26.0
+offset_right = 108.0
+offset_bottom = 42.0
+theme_override_colors/font_color = Color(1, 0.45, 0.35, 1)
+theme_override_font_sizes/font_size = 12
+text = "RAGE"
+
 [node name="TargetBar" type="ProgressBar" parent="."]
 visible = false
 offset_left = 352.0

@@ -35,8 +35,6 @@ window/size/window_width_override=1200
 window/size/window_height_override=480
 window/stretch/mode="viewport"
 window/stretch/aspect="expand"
-window/size/viewport_width_override=1200
-window/size/viewport_height_override=480
 
 [input]
 

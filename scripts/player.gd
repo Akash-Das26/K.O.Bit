@@ -1,12 +1,18 @@
 extends Fighter
 
+## Rage: below this share of max health the player hits harder and glows red.
 const DIR := "res://assets/Spritesheets/Brawler Girl/"
 const COMBO_WINDOW := 0.45
 const COMBO_ATTACKS := ["jab", "punch", "kick"]
+const RAGE_THRESHOLD := 0.3
+const RAGE_DAMAGE_MULT := 1.5
+
+var is_raging := false
 
 var _combo_step := 0
 var _combo_window := 0.0
 var _jab_buffered := false
+var _rage_time := 0.0
 
 
 func _ready() -> void:
@@ -17,6 +23,34 @@ func _ready() -> void:
 	fades_on_death = false
 	super._ready()
 	add_to_group("player")
+	health_changed.connect(_on_health_changed)
+	_update_rage()
+
+
+## Low health turns on extra damage; the pulse makes it readable at a glance.
+func _update_rage() -> void:
+	var raging := state != State.DEAD and health > 0 \
+		and health <= roundi(float(max_health) * RAGE_THRESHOLD)
+	damage_mult = RAGE_DAMAGE_MULT if raging else 1.0
+	if raging == is_raging:
+		return
+	is_raging = raging
+	if not is_raging:
+		_rage_time = 0.0
+		sprite.modulate = Color(1, 1, 1, 1)
+	rage_changed.emit(is_raging)
+
+
+func _on_health_changed(_current: int, _maximum: int) -> void:
+	_update_rage()
+
+
+func _process(delta: float) -> void:
+	if not is_raging:
+		return
+	_rage_time += delta
+	var pulse := 0.5 + 0.5 * sin(_rage_time * 9.0)
+	sprite.modulate = Color(1.0, 0.72 - 0.2 * pulse, 0.72 - 0.2 * pulse, 1.0)
 
 
 func get_animations() -> Dictionary:
@@ -123,7 +157,4 @@ func start_dive_kick() -> void:
 		dive_speed = 260.0
 		dive_forward = 110.0
 		height_velocity = 0.0
-		# A dive from the jump apex is over in ~0.1 s, before frame 1, so the
-		# hitbox has to be armed here instead of on the first frame change.
-		hitbox.set_deferred("monitoring", true)
 		Fx.play("dive_kick")
